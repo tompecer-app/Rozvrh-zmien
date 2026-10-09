@@ -186,10 +186,12 @@ let year = (todayY===2026 || todayY===2027) ? todayY : 2026;
 let shift="Zmena A", mi = (todayY===2026||todayY===2027) ? todayM : 8;
 
 // ---- localStorage persistence ----
-const STORAGE_KEY = "rozvrh-zmien-notes-v1";
+const STORAGE_KEY = "rozvrh-zmien-notes-v2";
+const OLD_STORAGE_KEY = "rozvrh-zmien-notes-v1";
 const PREFS_KEY = "rozvrh-zmien-prefs-v1";
 const OVERTIME_KEY = "rozvrh-zmien-overtime-v1";
 function loadNotes(){
+  try{ localStorage.removeItem(OLD_STORAGE_KEY); }catch(e){}
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     notesData = raw ? JSON.parse(raw) : {};
@@ -358,9 +360,9 @@ function renderOtSection(dKey, code){
   }
 }
 function openNoteModal(dateKey, dateLabel, code){
-  activeNoteKey = dateKey;
+  activeNoteKey = overtimeKeyFor(dateKey);
   document.getElementById('note-date-label').textContent = dateLabel;
-  document.getElementById('note-text').value = notesData[dateKey] || '';
+  document.getElementById('note-text').value = notesData[activeNoteKey] || '';
   renderOtSection(dateKey, code);
   document.getElementById('note-overlay').style.display = 'flex';
 }
@@ -420,7 +422,7 @@ function render(){
     const isToday = isCurrentMonth && dayNum===todayD;
     const otLetter = otMap[dayNum];
     const dKey = dateKeyFor(year, mi, dayNum);
-    const hasNote = !!notesData[dKey];
+    const hasNote = !!notesData[overtimeKeyFor(dKey)];
     const cell=document.createElement("div");
     cell.className = "day-cell";
     if(isToday) cell.classList.add("today");
@@ -474,7 +476,7 @@ function render(){
       dot.className="note-dot";
       if(code || userLetter){ dot.style.background="#fff"; dot.style.boxShadow="0 0 0 1px rgba(0,0,0,0.25)"; }
       cell.appendChild(dot);
-      cell.title = notesData[dKey];
+      cell.title = notesData[overtimeKeyFor(dKey)];
     }
     cell.onclick = ()=>{
       const dateLabel = `${dayNum}. ${months[mi]} ${year}`;
