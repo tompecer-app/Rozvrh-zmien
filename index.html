@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="sk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#14161a"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Rozvrh zmien"><title>Rozvrh zmien</title><style>html{background:#14161a}body{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style></head><body>
+
+<style>
+  :root{
+    --bg: #14161a;
+    --panel: #1c1f25;
+    --panel-2: #22262e;
+    --border: #2e333c;
+    --text: #e9ebee;
+    --text-dim: #9aa1ad;
+    --text-faint: #6b7280;
+    --accent: #e0a45c;
+    --r-color: #e0a45c;
+    --p-color: #5cb8a4;
+    --n-color: #8b85e0;
+    --s-color: #d9605a;
+    --radius: 10px;
+    --font-display: 'Bahnschrift', 'DIN Alternate', 'Arial Narrow', sans-serif;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color-scheme: dark;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);-webkit-font-smoothing:antialiased}
+  body{padding-bottom:3rem}
+  .wrap{max-width:480px;margin:0 auto;padding:1rem 1rem 0}
+  header.top{padding:1.5rem 1rem 1rem;text-align:left}
+  header.top .eyebrow{font-family:var(--font-display);letter-spacing:0.04em;font-size:11px;color:var(--text-faint);text-transform:uppercase;margin-bottom:2px}
+  header.top h1{font-family:var(--font-display);font-weight:700;font-size:28px;letter-spacing:-0.01em;margin:0;color:var(--text)}
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--accent);background:rgba(224,164,92,0.1);border-radius:20px;padding:5px 12px;margin-top:10px;border:1px solid rgba(224,164,92,0.25)}
+
+  .mode-tabs{display:flex;gap:6px;margin-bottom:0.75rem}
+  .mode-tabs button{flex:1}
+
+  .banner{display:none;font-size:11.5px;line-height:1.4;color:#e8c9b0;background:rgba(217,96,90,0.12);border:1px solid rgba(217,96,90,0.3);border-radius:var(--radius);padding:8px 12px;margin-bottom:0.75rem}
+
+  .row{display:flex;gap:8px;margin-bottom:1rem;align-items:center}
+  .shift-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;flex:1}
+
+  button{font-family:var(--font-body);font-size:13px;background:var(--panel);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;padding:8px 10px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+  button:hover{background:var(--panel-2)}
+  button.active{background:var(--accent);color:#1a1305;border-color:var(--accent);font-weight:600}
+  .icon-btn{width:38px;height:38px;padding:0;display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-size:16px}
+  .shift-tabs button{font-size:17px;font-weight:600;padding:12px 0;min-height:48px;border-radius:10px}
+
+  .settings-panel{display:none;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:0.9rem;margin-bottom:1rem;flex-direction:column;gap:0.7rem}
+  .settings-panel .srow{display:flex;align-items:center;justify-content:space-between;font-size:13px}
+  .settings-panel input[type=color]{width:36px;height:28px;border:1px solid var(--border);border-radius:6px;padding:0;background:none;cursor:pointer}
+  .settings-panel button.reset{align-self:flex-start;font-size:12px;padding:6px 10px}
+
+  .nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.85rem}
+  .nav .label{font-family:var(--font-display);font-size:17px;font-weight:600;letter-spacing:0.01em}
+
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:1rem}
+  .wd-label{text-align:center;font-size:10.5px;color:var(--text-faint);padding:2px 0;letter-spacing:0.03em}
+  .day-cell{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:7px;font-size:12px;position:relative;box-sizing:border-box;border:0.5px solid var(--border);cursor:pointer;background:var(--panel);color:var(--text-faint);user-select:none}
+  .day-cell .num{line-height:1.1}
+  .day-cell .code{line-height:1.1;font-weight:600}
+  .day-cell.filled{color:#0f1013;font-weight:600}
+  .day-cell.today{border:2px solid var(--s-color);animation:blink 1s step-start infinite}
+  .day-cell.overtime{border:1.5px dashed #c98c3a}
+  .note-dot{position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .ot-plus{position:absolute;top:2px;left:3px;font-size:10px;font-weight:800;line-height:1;color:#0f1013}
+  .day-cell.extended{box-shadow:inset 0 0 0 2px var(--ot-color, #e8c547)}
+  @keyframes blink{0%,100%{border-color:var(--s-color)}50%{border-color:transparent}}
+
+  .legend{display:flex;gap:14px;font-size:11.5px;color:var(--text-dim);margin-bottom:1rem;flex-wrap:wrap}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .swatch{display:inline-block;width:9px;height:9px;border-radius:3px}
+
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.5rem}
+  .stat-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:0.9rem}
+  .stat-card .l{font-size:12px;color:var(--text-dim)}
+  .stat-card .v{font-size:23px;font-weight:700;font-family:var(--font-display)}
+
+  .offline-note{font-size:11px;color:var(--text-faint);text-align:center;padding:1rem 1rem 0;line-height:1.5}
+
+  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1000;align-items:center;justify-content:center;padding:1rem}
+  .modal{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;width:100%;max-width:360px;display:flex;flex-direction:column;gap:0.8rem}
+  .modal .date-label{font-size:14px;font-weight:600;font-family:var(--font-display)}
+  .modal textarea{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:0.6rem;color:var(--text);font:inherit;font-size:14px;resize:vertical}
+  .modal .actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+  .modal-divider{height:1px;background:var(--border)}
+  .ot-label{font-size:12px;color:var(--text-dim);margin-bottom:0.5rem}
+  .ot-picker{display:flex;gap:8px;flex-wrap:wrap}
+  .ot-btn{flex:1;min-width:64px;padding:10px 6px;font-size:14px;font-weight:600;border-radius:8px;text-align:center}
+  .ot-btn.on{color:#0f1013;font-weight:700}
+  .ot-btn.clear{flex:0 0 auto;color:var(--text-dim)}
+  .ot-toggle{width:100%;padding:12px;font-size:14px;font-weight:600;border-radius:8px}
+  .ot-toggle.on{background:var(--accent);color:#1a1305;border-color:var(--accent)}
+  .ot-note{font-size:12px;color:var(--text-faint)}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">Nepretržitá prevádzka</div>
+    <h1>Rozvrh zmien</h1>
+    <div class="badge" id="today-badge"></div>
+  </header>
+
+  <div class="mode-tabs" id="mode-tabs"></div>
+  <div class="banner" id="proj-banner">⚠️ Rok 2027 je len odhadovaným predĺžením cyklu z roku 2026 — nie je to oficiálne potvrdené firmou.</div>
+
+  <div class="row">
+    <div class="shift-tabs" id="shift-tabs"></div>
+    <button class="icon-btn" id="settings-btn" aria-label="Nastavenia farieb">&#9998;</button>
+  </div>
+
+  <div class="settings-panel" id="settings-panel">
+    <div class="srow"><span>Ranná (R)</span><input type="color" id="color-R" value="#e0a45c"></div>
+    <div class="srow" id="row-P"><span>Poobedná (P)</span><input type="color" id="color-P" value="#5cb8a4"></div>
+    <div class="srow"><span>Nočná (N)</span><input type="color" id="color-N" value="#8b85e0"></div>
+    <div class="srow"><span>Nadčas</span><input type="color" id="color-OT" value="#e8c547"></div>
+    <button class="reset" id="reset-colors">Obnoviť predvolené</button>
+  </div>
+
+  <div class="nav">
+    <button class="icon-btn" id="prev" aria-label="Predchádzajúci mesiac">&#8249;</button>
+    <span class="label" id="month-label"></span>
+    <button class="icon-btn" id="next" aria-label="Nasledujúci mesiac">&#8250;</button>
+  </div>
+
+  <div class="cal" id="cal"></div>
+  <div class="legend" id="legend"></div>
+  <div class="stats" id="stats"></div>
+
+  <div class="offline-note">Táto appka beží celá vo vašom prehliadači — funguje aj bez internetu a poznámky sa ukladajú priamo do tohto zariadenia.</div>
+</div>
+
+<div class="overlay" id="note-overlay">
+  <div class="modal">
+    <div class="date-label" id="note-date-label"></div>
+
+    <div id="ot-section">
+      <div class="ot-label" id="ot-label"></div>
+      <div class="ot-picker" id="ot-picker"></div>
+    </div>
+
+    <div class="modal-divider"></div>
+
+    <textarea id="note-text" rows="3" placeholder=""></textarea>
+    <div class="actions">
+      <button id="note-delete">Zmazať poznámku</button>
+      <button id="note-cancel">Zavrieť</button>
+      <button id="note-save" class="active">Uložiť poznámku</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const months = ["Január","Február","Marec","Apríl","Máj","Jún","Júl","August","September","Október","November","December"];
+const wd = {"P":"Po","U":"Ut","S":"St","Š":"Št","Pia":"Pi","So":"So","Ne":"Ne"};
+const data2026 = {"Zmena A":[[["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P",null],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"]],[["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U",null],["S",null],["Š",null],["Pia","R"],["So","R"]],[["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia",null],["So","R"],["Ne",null],["P",null],["U",null]],[["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","S"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So",null],["Ne",null],["P",null],["U",null],["S","N"],["Š","N"]],[["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null]],[["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S",null],["Š",null],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"]],[["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"]],[["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U",null],["S",null],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P",null]],[["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne",null],["P",null],["U",null],["S","R"]],[["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne",null],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null]],[["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š",null],["Pia",null],["So",null],["Ne",null],["P","N"]],[["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","S"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null]]],"Zmena B":[[["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P",null],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"]],[["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U",null],["S",null],["Š",null],["Pia","N"],["So","N"]],[["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia",null],["So","N"],["Ne",null],["P",null],["U",null]],[["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","S"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So",null],["Ne",null],["P",null],["U",null],["S","R"],["Š","R"]],[["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null]],[["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S",null],["Š",null],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"]],[["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"]],[["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U",null],["S",null],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P",null]],[["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne",null],["P",null],["U",null],["S","N"]],[["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne",null],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null]],[["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š",null],["Pia",null],["So",null],["Ne",null],["P","R"]],[["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","S"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null]]],"Zmena C":[[["Š","S"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null]],[["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S",null],["Š","R"],["Pia",null],["So",null]],[["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š",null],["Pia",null],["So",null],["Ne",null],["P",null],["U","N"]],[["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null]],[["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U",null],["S",null],["Š",null],["Pia",null],["So","R"],["Ne","R"]],[["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null]],[["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne",null],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null]],[["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š",null],["Pia",null],["So",null],["Ne",null],["P","R"]],[["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P",null],["U","R"],["S",null]],[["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P",null],["U",null],["S",null],["Š",null],["Pia","N"],["So","N"]],[["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P",null]],[["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","S"],["So","S"],["Ne",null],["P",null],["U",null],["S","R"],["Š","R"]]],"Zmena D":[[["Š","S"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null]],[["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S",null],["Š","N"],["Pia",null],["So",null]],[["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š",null],["Pia",null],["So",null],["Ne",null],["P",null],["U","R"]],[["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null]],[["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U",null],["S",null],["Š",null],["Pia",null],["So","N"],["Ne","N"]],[["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null]],[["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne",null],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null]],[["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š",null],["Pia",null],["So",null],["Ne",null],["P","N"]],[["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P",null],["U","N"],["S",null]],[["Š",null],["Pia","R"],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P",null],["U",null],["S",null],["Š",null],["Pia","R"],["So","R"]],[["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P",null]],[["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š",null],["Pia","N"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia",null],["So",null],["Ne",null],["P","N"],["U","N"],["S",null],["Š",null],["Pia","S"],["So","S"],["Ne",null],["P",null],["U",null],["S","N"],["Š","N"]]]};const data2027 = {"Zmena A":[[["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U",null],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"]],[["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S",null],["Š",null],["Pia",null],["So","R"],["Ne","R"]],[["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So",null],["Ne","R"],["P",null],["U",null],["S",null]],[["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","S"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne",null],["P",null],["U",null],["S",null],["Š","N"],["Pia","N"]],[["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null]],[["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š",null],["Pia",null],["So",null],["Ne",null],["P",null],["U","R"],["S","R"]],[["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"]],[["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S",null],["Š",null],["Pia",null],["So",null],["Ne","N"],["P","N"],["U",null]],[["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P",null],["U",null],["S",null],["Š","R"]],[["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P",null],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null]],[["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia",null],["So",null],["Ne",null],["P",null],["U","N"]],[["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","S"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null]]],"Zmena B":[[["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U",null],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"]],[["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S",null],["Š",null],["Pia",null],["So","N"],["Ne","N"]],[["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So",null],["Ne","N"],["P",null],["U",null],["S",null]],[["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","S"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne",null],["P",null],["U",null],["S",null],["Š","R"],["Pia","R"]],[["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null]],[["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š",null],["Pia",null],["So",null],["Ne",null],["P",null],["U","N"],["S","N"]],[["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"]],[["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S",null],["Š",null],["Pia",null],["So",null],["Ne","R"],["P","R"],["U",null]],[["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P",null],["U",null],["S",null],["Š","N"]],[["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P",null],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null]],[["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia",null],["So",null],["Ne",null],["P",null],["U","R"]],[["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","S"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null]]],"Zmena C":[[["Pia","S"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null]],[["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š",null],["Pia","R"],["So",null],["Ne",null]],[["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia",null],["So",null],["Ne",null],["P",null],["U",null],["S","N"]],[["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null]],[["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So",null],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S",null],["Š",null],["Pia",null],["So",null],["Ne","R"],["P","R"]],[["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null]],[["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P",null],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null]],[["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia",null],["So",null],["Ne",null],["P",null],["U","R"]],[["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U",null],["S","R"],["Š",null]],[["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U",null],["S",null],["Š",null],["Pia",null],["So","N"],["Ne","N"]],[["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So",null],["Ne","N"],["P","N"],["U",null]],[["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","S"],["Ne","S"],["P",null],["U",null],["S",null],["Š","R"],["Pia","R"]]],"Zmena D":[[["Pia","S"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null]],[["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š",null],["Pia","N"],["So",null],["Ne",null]],[["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia",null],["So",null],["Ne",null],["P",null],["U",null],["S","R"]],[["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null]],[["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So",null],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S",null],["Š",null],["Pia",null],["So",null],["Ne","N"],["P","N"]],[["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null]],[["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P",null],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null]],[["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia",null],["So",null],["Ne",null],["P",null],["U","N"]],[["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U",null],["S","N"],["Š",null]],[["Pia",null],["So","R"],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U",null],["S",null],["Š",null],["Pia",null],["So","R"],["Ne","R"]],[["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So",null],["Ne","R"],["P","R"],["U",null]],[["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š",null],["Pia",null],["So","N"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So",null],["Ne",null],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","S"],["Ne","S"],["P",null],["U",null],["S",null],["Š","N"],["Pia","N"]]]};const data8h_2026 = {"Zmena A":[[["Š","S"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P",null],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"]],[["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U",null],["S","P"],["Š","N"],["Pia","N"],["So",null]],[["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š",null],["Pia",null],["So","P"],["Ne","P"],["P","N"],["U","N"]],[["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","S"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"]],[["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U",null],["S",null],["Š",null],["Pia",null],["So","R"],["Ne","P"]],[["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"]],[["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null]],[["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U",null],["S",null],["Š",null],["Pia","P"],["So","N"],["Ne","N"],["P",null]],[["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne",null],["P","P"],["U","P"],["S","N"]],[["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne",null],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"]],[["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š",null],["Pia",null],["So",null],["Ne","R"],["P","R"]],[["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","S"],["Pia","S"],["So","S"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"]]],"Zmena B":[[["Š","S"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P",null],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"]],[["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U",null],["S",null],["Š","P"],["Pia","P"],["So","N"]],[["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S",null],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"]],[["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","S"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"]],[["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P",null],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"]],[["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S",null],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null]],[["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"]],[["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P",null],["U",null],["S",null],["Š","R"],["Pia",null],["So","P"],["Ne","P"],["P","N"]],[["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"]],[["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P",null],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"]],[["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia",null],["So","N"],["Ne",null],["P",null]],[["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","S"],["So","S"],["Ne",null],["P","P"],["U","N"],["S","N"],["Š",null]]],"Zmena C":[[["Š","S"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P",null],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null]],[["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P",null],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"]],[["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"]],[["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null]],[["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U",null],["S","P"],["Š",null],["Pia",null],["So","N"],["Ne",null]],[["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia",null],["So","R"],["Ne","P"],["P","P"],["U","N"]],[["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"]],[["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U",null],["S",null],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"]],[["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"]],[["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne",null],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null]],[["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So",null],["Ne",null],["P",null],["U",null],["S","R"],["Š",null],["Pia","P"],["So","P"],["Ne","N"],["P","N"]],[["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","S"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"]]],"Zmena D":[[["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"]],[["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"]],[["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia",null],["So","N"],["Ne","N"],["P",null],["U",null]],[["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","S"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So",null],["Ne",null],["P","P"],["U","P"],["S","N"],["Š","N"]],[["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š",null],["Pia",null],["So","P"],["Ne","N"]],[["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"]],[["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"]],[["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P",null],["U","P"],["S","P"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"]],[["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne",null],["P","N"],["U","N"],["S",null]],[["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U",null],["S","P"],["Š","P"],["Pia","N"],["So","N"]],[["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia",null],["So","R"],["Ne","P"],["P","P"]],[["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","S"],["Pia","S"],["So","S"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"]]]};const data8h_2027 = {"Zmena A":[[["Pia","S"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U",null],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"]],[["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S",null],["Š","P"],["Pia","N"],["So","N"],["Ne",null]],[["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia",null],["So",null],["Ne","P"],["P","P"],["U","N"],["S","N"]],[["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","S"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"]],[["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S",null],["Š",null],["Pia",null],["So",null],["Ne","R"],["P","P"]],[["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"]],[["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null]],[["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S",null],["Š",null],["Pia",null],["So","P"],["Ne","N"],["P","N"],["U",null]],[["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P",null],["U","P"],["S","P"],["Š","N"]],[["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P",null],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"]],[["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P","R"],["U","R"]],[["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","S"],["So","S"],["Ne","S"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"]]],"Zmena B":[[["Pia","S"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U",null],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"]],[["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S",null],["Š",null],["Pia","P"],["So","P"],["Ne","N"]],[["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š",null],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"]],[["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","S"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"]],[["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U",null],["S",null],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"]],[["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š",null],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null]],[["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"]],[["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U",null],["S",null],["Š",null],["Pia","R"],["So",null],["Ne","P"],["P","P"],["U","N"]],[["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"]],[["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U",null],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"]],[["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So",null],["Ne","N"],["P",null],["U",null]],[["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","S"],["Ne","S"],["P",null],["U","P"],["S","N"],["Š","N"],["Pia",null]]],"Zmena C":[[["Pia","S"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P",null],["U",null],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null]],[["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U",null],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"]],[["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"],["S","R"]],[["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null]],[["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S",null],["Š","P"],["Pia",null],["So",null],["Ne","N"],["P",null]],[["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So",null],["Ne","R"],["P","P"],["U","P"],["S","N"]],[["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"]],[["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S",null],["Š",null],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"]],[["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"]],[["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P",null],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null]],[["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne",null],["P",null],["U",null],["S",null],["Š","R"],["Pia",null],["So","P"],["Ne","P"],["P","N"],["U","N"]],[["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","S"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"]]],"Zmena D":[[["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne",null],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"]],[["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"]],[["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So",null],["Ne","N"],["P","N"],["U",null],["S",null]],[["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","S"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne",null],["P",null],["U","P"],["S","P"],["Š","N"],["Pia","N"]],[["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia",null],["So",null],["Ne","P"],["P","N"]],[["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"]],[["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"]],[["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U",null],["S","P"],["Š","P"],["Pia","N"],["So",null],["Ne",null],["P",null],["U","R"]],[["S","R"],["Š","P"],["Pia","P"],["So","N"],["Ne","N"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P",null],["U","N"],["S","N"],["Š",null]],[["Pia",null],["So","R"],["Ne","R"],["P","P"],["U","P"],["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U",null],["S",null],["Š","P"],["Pia","P"],["So","N"],["Ne","N"]],[["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"],["So","P"],["Ne","N"],["P","N"],["U",null],["S",null],["Š","R"],["Pia","R"],["So","P"],["Ne","P"],["P","N"],["U","N"],["S",null],["Š",null],["Pia","R"],["So","R"],["Ne","P"],["P","P"],["U","N"],["S","N"],["Š",null],["Pia",null],["So",null],["Ne","R"],["P","P"],["U","P"]],[["S","N"],["Š","N"],["Pia",null],["So",null],["Ne","R"],["P","R"],["U","P"],["S","P"],["Š","N"],["Pia","N"],["So",null],["Ne",null],["P","R"],["U","R"],["S","P"],["Š","P"],["Pia","N"],["So","N"],["Ne",null],["P",null],["U","R"],["S","R"],["Š","P"],["Pia","S"],["So","S"],["Ne","S"],["P",null],["U",null],["S","R"],["Š","R"],["Pia","P"]]]};const overtimeMap12h = {"Zmena A":[[[26,"N"]],[[24,"N"]],[[27,"R"]],[[25,"N"],[26,"R"]],[],[[24,"N"],[25,"N"]],[],[[25,"R"],[28,"N"]],[[27,"N"]],[[25,"N"]],[[26,"R"]],[]],"Zmena B":[[[26,"R"]],[[24,"R"]],[[27,"N"]],[[25,"R"],[26,"N"]],[],[[24,"R"],[25,"R"]],[],[[25,"N"],[28,"R"]],[[27,"R"]],[[25,"R"]],[[26,"N"]],[]],"Zmena C":[[],[[25,"R"]],[[26,"R"]],[],[[15,"N"],[26,"N"],[29,"R"]],[],[[26,"R"]],[[27,"N"]],[[28,"R"]],[[26,"R"],[27,"R"]],[[27,"N"]],[[27,"R"]]],"Zmena D":[[],[[25,"N"]],[[26,"N"]],[],[[15,"R"],[26,"R"],[29,"N"]],[],[[26,"N"]],[[27,"R"]],[[28,"N"]],[[26,"N"],[27,"N"]],[[27,"R"]],[[27,"N"]]]};const overtimeMap8h = {"Zmena A":[[[26,"N"]],[[24,"P"]],[[26,"R"],[27,"R"]],[],[[26,"N"],[29,"R"]],[],[],[[25,"R"],[26,"R"],[27,"P"]],[[27,"R"]],[[25,"N"]],[[26,"N"]],[]],"Zmena B":[[[26,"P"]],[[24,"R"],[25,"R"]],[[25,"N"]],[],[[25,"P"],[26,"P"]],[[24,"R"]],[[26,"R"]],[[24,"N"],[28,"R"]],[],[[26,"N"]],[[27,"N"]],[[27,"P"]]],"Zmena C":[[[25,"R"],[26,"R"]],[[23,"N"]],[[27,"N"]],[],[[26,"R"],[28,"P"],[29,"N"]],[[26,"R"]],[],[[25,"N"],[26,"N"]],[],[[25,"R"]],[[21,"N"],[22,"N"],[26,"R"]],[]],"Zmena D":[[[24,"N"]],[],[[27,"P"]],[[25,"R"],[26,"R"]],[[28,"R"],[29,"P"]],[],[],[[24,"R"],[28,"N"]],[[27,"P"]],[[26,"R"],[27,"R"]],[[27,"R"]],[]]};
+const dataByYear12h = {2026: data2026, 2027: data2027};
+const dataByYear8h = {2026: data8h_2026, 2027: data8h_2027};
+
+const stats12h = {
+"Zmena A":[[172.5,23],[149.5,19.93],[161,21.47],[161,21.47],[161,21.47],[161,21.47],[172.5,23],[161,21.47],[161,21.47],[161,21.47],[161,21.47],[172.5,23]],
+"Zmena B":[[172.5,23],[149.5,19.93],[161,21.47],[161,21.47],[161,21.47],[161,21.47],[172.5,23],[161,21.47],[161,21.47],[161,21.47],[161,21.47],[172.5,23]],
+"Zmena C":[[172.5,23],[149.5,19.93],[161,21.47],[161,21.47],[161,21.47],[161,21.47],[172.5,23],[161,21.47],[161,21.47],[161,21.47],[161,21.47],[172.5,23]],
+"Zmena D":[[172.5,23],[149.5,19.93],[161,21.47],[161,21.47],[161,21.47],[161,21.47],[172.5,23],[161,21.47],[161,21.47],[161,21.47],[161,21.47],[172.5,23]]
+};
+const stats8h = {
+"Zmena A":[[165,22],[150,20],[165,22],[165,22],[157.5,21],[165,22],[172.5,23],[157.5,21],[165,22],[165,22],[157.5,21],[172.5,23]],
+"Zmena B":[[165,22],[150,20],[165,22],[165,22],[157.5,21],[165,22],[172.5,23],[157.5,21],[165,22],[165,22],[157.5,21],[172.5,23]],
+"Zmena C":[[165,22],[150,20],[165,22],[165,22],[157.5,21],[165,22],[172.5,23],[157.5,21],[165,22],[165,22],[157.5,21],[172.5,23]],
+"Zmena D":[[165,22],[150,20],[165,22],[165,22],[157.5,21],[165,22],[172.5,23],[157.5,21],[165,22],[165,22],[157.5,21],[172.5,23]]
+};
+
+const DEFAULT_R = "#e0a45c";
+const DEFAULT_P = "#5cb8a4";
+const DEFAULT_N = "#8b85e0";
+const DEFAULT_OT = "#e8c547";
+let userColors = { R: DEFAULT_R, P: DEFAULT_P, N: DEFAULT_N, OT: DEFAULT_OT };
+let notesData = {};
+let overtimeUser = {};
+
+const today = new Date();
+const todayY = today.getFullYear(), todayM = today.getMonth(), todayD = today.getDate();
+const startOfYear = new Date(todayY,0,1);
+const dayOfYear = Math.floor((today - startOfYear)/86400000) + 1;
+document.getElementById("today-badge").textContent = `Dnes: ${todayD}. ${months[todayM]} ${todayY} — deň č. ${dayOfYear}`;
+
+let mode = "12h";
+let year = (todayY===2026 || todayY===2027) ? todayY : 2026;
+let shift="Zmena A", mi = (todayY===2026||todayY===2027) ? todayM : 8;
+
+// ---- localStorage persistence ----
+const STORAGE_KEY = "rozvrh-zmien-notes-v1";
+const PREFS_KEY = "rozvrh-zmien-prefs-v1";
+const OVERTIME_KEY = "rozvrh-zmien-overtime-v1";
+function loadNotes(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    notesData = raw ? JSON.parse(raw) : {};
+  }catch(e){ notesData = {}; }
+}
+function saveNotes(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(notesData)); }catch(e){}
+}
+function loadOvertime(){
+  try{
+    const raw = localStorage.getItem(OVERTIME_KEY);
+    overtimeUser = raw ? JSON.parse(raw) : {};
+  }catch(e){ overtimeUser = {}; }
+}
+function saveOvertime(){
+  try{ localStorage.setItem(OVERTIME_KEY, JSON.stringify(overtimeUser)); }catch(e){}
+}
+function overtimeKeyFor(dKey){
+  return `${mode}_${shift}_${dKey}`;
+}
+function loadPrefs(){
+  try{
+    const raw = localStorage.getItem(PREFS_KEY);
+    if(raw){
+      const p = JSON.parse(raw);
+      if(p.userColors) userColors = p.userColors;
+      if(p.mode) mode = p.mode;
+      if(p.shift) shift = p.shift;
+    }
+  }catch(e){}
+}
+function savePrefs(){
+  try{ localStorage.setItem(PREFS_KEY, JSON.stringify({userColors, mode, shift})); }catch(e){}
+}
+
+loadNotes();
+loadOvertime();
+loadPrefs();
+document.getElementById("color-R").value = userColors.R;
+document.getElementById("color-P").value = userColors.P;
+document.getElementById("color-N").value = userColors.N;
+document.getElementById("color-OT").value = userColors.OT;
+
+// ---- mode tabs ----
+const modeTabs = document.getElementById("mode-tabs");
+[["12h","12 hodín"],["8h","8 hodín"]].forEach(([val,label])=>{
+  const b=document.createElement("button");
+  b.textContent=label;
+  b.onclick=()=>{
+    mode=val;
+    document.getElementById("row-P").style.display = mode==="8h" ? "flex":"none";
+    renderModeTabs();
+    savePrefs();
+    render();
+  };
+  b.id="mtab-"+val;
+  modeTabs.appendChild(b);
+});
+function renderModeTabs(){
+  ["12h","8h"].forEach(v=>{
+    const b=document.getElementById("mtab-"+v);
+    b.classList.toggle("active", v===mode);
+  });
+}
+document.getElementById("row-P").style.display = mode==="8h" ? "flex" : "none";
+
+// ---- shift tabs ----
+const tabs=document.getElementById("shift-tabs");
+["Zmena A","Zmena B","Zmena C","Zmena D"].forEach(s=>{
+  const b=document.createElement("button");
+  b.textContent=s.replace("Zmena ","");
+  b.onclick=()=>{ shift=s; savePrefs(); render(); };
+  b.id="tab-"+s;
+  tabs.appendChild(b);
+});
+function updateTabs(){
+  ["Zmena A","Zmena B","Zmena C","Zmena D"].forEach(s=>{
+    document.getElementById("tab-"+s).classList.toggle("active", s===shift);
+  });
+}
+
+function renderLegend(){
+  const legend = document.getElementById("legend");
+  let html = `<span><span class="swatch" style="background:${userColors.R}"></span>R - ranná</span>`;
+  if(mode==="8h"){
+    html += `<span><span class="swatch" style="background:${userColors.P}"></span>P - poobedná</span>`;
+  }
+  html += `<span><span class="swatch" style="background:${userColors.N}"></span>N - nočná</span>`;
+  html += `<span><span class="swatch" style="background:#d9605a"></span>S - sviatok</span>`;
+  html += `<span><span class="swatch" style="border:1.5px dashed #c98c3a;background:none"></span>zmena v prípade potreby</span>`;
+  html += `<span><span class="swatch" style="background:${userColors.OT}"></span>nadčas</span>`;
+  html += `<span><span class="swatch" style="border-radius:50%;background:${userColors.R}"></span>poznámka</span>`;
+  legend.innerHTML = html;
+}
+
+// ---- notes modal ----
+let activeNoteKey = null;
+function dateKeyFor(y, monthIdx, day){
+  return `${y}-${String(monthIdx+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+}
+function overtimeLabel(letter){
+  return letter==="R" ? "Ranná" : letter==="P" ? "Poobedná" : "Nočná";
+}
+function renderOtSection(dKey, code){
+  const otSection = document.getElementById('ot-section');
+  const otLabelEl = document.getElementById('ot-label');
+  const otPicker = document.getElementById('ot-picker');
+  otPicker.innerHTML = '';
+
+  if(mode==="12h" && code){
+    // 12h shifts are already full length — nothing to extend
+    otSection.style.display = 'none';
+    return;
+  }
+  otSection.style.display = 'block';
+
+  const key = overtimeKeyFor(dKey);
+  const entry = overtimeUser[key];
+
+  if(!code){
+    // Empty day — offer to log worked overtime
+    otLabelEl.textContent = 'Nadčas v tento deň';
+    const letters = mode==="12h" ? ["R","N"] : ["R","P","N"];
+    letters.forEach(letter=>{
+      const b = document.createElement('button');
+      b.className = 'ot-btn';
+      b.textContent = letter;
+      const isOn = entry && entry.type==='letter' && entry.value===letter;
+      if(isOn){ b.classList.add('on'); b.style.background = userColors.OT; b.style.borderColor = userColors.OT; }
+      b.onclick = ()=>{
+        if(isOn){ delete overtimeUser[key]; } else { overtimeUser[key] = {type:'letter', value:letter}; }
+        saveOvertime();
+        render();
+        renderOtSection(dKey, code);
+      };
+      otPicker.appendChild(b);
+    });
+    if(entry){
+      const clearBtn = document.createElement('button');
+      clearBtn.className = 'ot-btn clear';
+      clearBtn.textContent = 'Zrušiť';
+      clearBtn.onclick = ()=>{
+        delete overtimeUser[key];
+        saveOvertime();
+        render();
+        renderOtSection(dKey, code);
+      };
+      otPicker.appendChild(clearBtn);
+    }
+  } else {
+    // Filled 8h day — offer to extend to 12h
+    otLabelEl.textContent = `Zmena: ${code}`;
+    const isOn = entry && entry.type==='extend';
+    const b = document.createElement('button');
+    b.className = 'ot-btn';
+    b.style.flex = '1 1 100%';
+    b.textContent = isOn ? `12/${code} — predĺžené` : 'Predĺžiť na 12h (nadčas)';
+    if(isOn){ b.classList.add('on'); b.style.background = userColors.OT; b.style.borderColor = userColors.OT; }
+    b.onclick = ()=>{
+      if(isOn){ delete overtimeUser[key]; } else { overtimeUser[key] = {type:'extend'}; }
+      saveOvertime();
+      render();
+      renderOtSection(dKey, code);
+    };
+    otPicker.appendChild(b);
+  }
+}
+function openNoteModal(dateKey, dateLabel, code){
+  activeNoteKey = dateKey;
+  document.getElementById('note-date-label').textContent = dateLabel;
+  document.getElementById('note-text').value = notesData[dateKey] || '';
+  renderOtSection(dateKey, code);
+  document.getElementById('note-overlay').style.display = 'flex';
+}
+function closeNoteModal(){
+  document.getElementById('note-overlay').style.display = 'none';
+  activeNoteKey = null;
+}
+document.getElementById('note-cancel').onclick = closeNoteModal;
+document.getElementById('note-overlay').onclick = (e)=>{ if(e.target.id==='note-overlay') closeNoteModal(); };
+document.getElementById('note-save').onclick = ()=>{
+  const text = document.getElementById('note-text').value.trim();
+  if(!activeNoteKey) return;
+  if(text){ notesData[activeNoteKey] = text; } else { delete notesData[activeNoteKey]; }
+  saveNotes();
+  closeNoteModal();
+  render();
+};
+document.getElementById('note-delete').onclick = ()=>{
+  if(!activeNoteKey) return;
+  delete notesData[activeNoteKey];
+  saveNotes();
+  closeNoteModal();
+  render();
+};
+
+function render(){
+  updateTabs();
+  renderLegend();
+  document.getElementById("proj-banner").style.display = (year===2027) ? "block" : "none";
+  document.getElementById("month-label").textContent=months[mi]+" "+year;
+  const cal=document.getElementById("cal");
+  cal.innerHTML="";
+  ["Po","Ut","St","Št","Pi","So","Ne"].forEach(d=>{
+    const h=document.createElement("div");
+    h.textContent=d;
+    h.className="wd-label";
+    cal.appendChild(h);
+  });
+  const dataByYear = mode==="12h" ? dataByYear12h : dataByYear8h;
+  const days = dataByYear[year][shift][mi];
+  const otSource = (year===2026) ? (mode==="12h" ? overtimeMap12h : overtimeMap8h) : null;
+  const otList = otSource ? (otSource[shift][mi] || []) : [];
+  const otMap = {};
+  otList.forEach(([day,letter])=>{ otMap[day]=letter; });
+  const firstWd=wd[days[0][0]];
+  const order=["Po","Ut","St","Št","Pi","So","Ne"];
+  const lead=order.indexOf(firstWd);
+  for(let i=0;i<lead;i++){
+    const e=document.createElement("div");
+    cal.appendChild(e);
+  }
+  const colors={"R":userColors.R,"P":userColors.P,"N":userColors.N,"S":"#d9605a"};
+  const isCurrentMonth = (todayY===year && todayM===mi);
+  days.forEach((d,idx)=>{
+    const code=d[1];
+    const dayNum=idx+1;
+    const isToday = isCurrentMonth && dayNum===todayD;
+    const otLetter = otMap[dayNum];
+    const dKey = dateKeyFor(year, mi, dayNum);
+    const hasNote = !!notesData[dKey];
+    const cell=document.createElement("div");
+    cell.className = "day-cell";
+    if(isToday) cell.classList.add("today");
+    else if(otLetter) cell.classList.add("overtime");
+
+    const numWrap=document.createElement("span");
+    numWrap.className="num";
+    numWrap.textContent=dayNum;
+    const otKey = overtimeKeyFor(dKey);
+    const otEntry = overtimeUser[otKey];
+    const userLetter = (otEntry && otEntry.type==='letter') ? otEntry.value : null;
+    const isExtended = !!(otEntry && otEntry.type==='extend' && code);
+    if(code){
+      cell.classList.add("filled");
+      cell.style.background=colors[code];
+      const codeWrap=document.createElement("span");
+      codeWrap.className="code";
+      codeWrap.textContent = isExtended ? `12/${code}` : code;
+      cell.appendChild(numWrap);
+      cell.appendChild(codeWrap);
+      if(isExtended){
+        cell.classList.add("extended");
+        cell.style.setProperty("--ot-color", userColors.OT);
+      }
+    } else if(userLetter){
+      cell.classList.add("filled");
+      cell.style.background = userColors.OT;
+      const codeWrap=document.createElement("span");
+      codeWrap.className="code";
+      codeWrap.textContent=userLetter;
+      cell.appendChild(numWrap);
+      cell.appendChild(codeWrap);
+      const plus=document.createElement("span");
+      plus.className="ot-plus";
+      plus.textContent="+";
+      cell.appendChild(plus);
+    } else if(otLetter){
+      cell.style.color=userColors[otLetter] || userColors.R;
+      const codeWrap=document.createElement("span");
+      codeWrap.className="code";
+      codeWrap.style.fontWeight="600";
+      codeWrap.textContent=otLetter;
+      cell.appendChild(numWrap);
+      cell.appendChild(codeWrap);
+    } else {
+      if(isToday) cell.style.color = "var(--text)";
+      cell.appendChild(numWrap);
+    }
+    if(hasNote){
+      const dot=document.createElement("span");
+      dot.className="note-dot";
+      if(code || userLetter){ dot.style.background="#fff"; dot.style.boxShadow="0 0 0 1px rgba(0,0,0,0.25)"; }
+      cell.appendChild(dot);
+      cell.title = notesData[dKey];
+    }
+    cell.onclick = ()=>{
+      const dateLabel = `${dayNum}. ${months[mi]} ${year}`;
+      openNoteModal(dKey, dateLabel, code);
+    };
+    cal.appendChild(cell);
+  });
+  const st=document.getElementById("stats");
+  const statsSrc = mode==="12h" ? stats12h : stats8h;
+  const [hodiny,zmeny]=statsSrc[shift][mi];
+  st.innerHTML="";
+  [["Hodiny",hodiny],["Zmeny",zmeny.toFixed(zmeny%1===0?0:2)]].forEach(([label,val])=>{
+    const card=document.createElement("div");
+    card.className="stat-card";
+    card.innerHTML=`<div class="l">${label}</div><div class="v">${val}</div>`;
+    st.appendChild(card);
+  });
+}
+
+document.getElementById("prev").onclick=()=>{
+  if(mi>0){ mi--; }
+  else if(year===2027){ year=2026; mi=11; }
+  render();
+};
+document.getElementById("next").onclick=()=>{
+  if(mi<11){ mi++; }
+  else if(year===2026){ year=2027; mi=0; }
+  render();
+};
+document.getElementById("settings-btn").onclick=()=>{
+  const panel = document.getElementById("settings-panel");
+  panel.style.display = panel.style.display==="flex" ? "none" : "flex";
+};
+document.getElementById("color-R").oninput = (e)=>{ userColors.R = e.target.value; savePrefs(); render(); };
+document.getElementById("color-P").oninput = (e)=>{ userColors.P = e.target.value; savePrefs(); render(); };
+document.getElementById("color-N").oninput = (e)=>{ userColors.N = e.target.value; savePrefs(); render(); };
+document.getElementById("color-OT").oninput = (e)=>{ userColors.OT = e.target.value; savePrefs(); render(); };
+document.getElementById("reset-colors").onclick = ()=>{
+  userColors = { R: DEFAULT_R, P: DEFAULT_P, N: DEFAULT_N, OT: DEFAULT_OT };
+  document.getElementById("color-R").value = DEFAULT_R;
+  document.getElementById("color-P").value = DEFAULT_P;
+  document.getElementById("color-N").value = DEFAULT_N;
+  document.getElementById("color-OT").value = DEFAULT_OT;
+  savePrefs();
+  render();
+};
+
+renderModeTabs();
+render();
+</script>
+</body></html>
