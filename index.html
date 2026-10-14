@@ -89,6 +89,10 @@
   .ot-toggle{width:100%;padding:12px;font-size:14px;font-weight:600;border-radius:8px}
   .ot-toggle.on{background:var(--accent);color:#1a1305;border-color:var(--accent)}
   .ot-note{font-size:12px;color:var(--text-faint)}
+  .leave-badge{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:800;line-height:1;padding:1px 3px;border-radius:3px;color:#0f1013}
+  .stat-card .s{font-size:12px;color:var(--text-dim);margin-top:2px}
+  .settings-panel .srow input[type=number]{width:72px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font:inherit;font-size:16px;text-align:right}
+  .settings-panel .hdr{font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.04em;margin-top:2px}
 </style>
 
 <div class="wrap">
@@ -111,6 +115,9 @@
     <div class="srow" id="row-P"><span>Poobedná (P)</span><input type="color" id="color-P" value="#5cb8a4"></div>
     <div class="srow"><span>Nočná (N)</span><input type="color" id="color-N" value="#8b85e0"></div>
     <div class="srow"><span>Nadčas</span><input type="color" id="color-OT" value="#e8c547"></div>
+    <div class="srow"><span>Dovolenka (D)</span><input type="color" id="color-D" value="#8fd14f"></div>
+    <div class="srow"><span>Priepustka (PP)</span><input type="color" id="color-PP" value="#5aa0e0"></div>
+    <div class="srow"><span>Ročný nárok dovolenky (dní)</span><input type="number" id="vac-entitlement" inputmode="numeric" min="0" max="99" step="1" value="25"></div>
     <button class="reset" id="reset-colors">Obnoviť predvolené</button>
   </div>
 
@@ -123,8 +130,9 @@
   <div class="cal" id="cal"></div>
   <div class="legend" id="legend"></div>
   <div class="stats" id="stats"></div>
+  <div class="stats" id="leave-stats"></div>
 
-  <div class="offline-note">Táto appka beží celá vo vašom prehliadači — funguje aj bez internetu a poznámky sa ukladajú priamo do tohto zariadenia. (verzia 3)</div>
+  <div class="offline-note">Táto appka beží celá vo vašom prehliadači — funguje aj bez internetu a poznámky sa ukladajú priamo do tohto zariadenia. (verzia 4)</div>
 </div>
 
 <div class="overlay" id="note-overlay">
@@ -134,6 +142,11 @@
     <div id="ot-section">
       <div class="ot-label" id="ot-label"></div>
       <div class="ot-picker" id="ot-picker"></div>
+    </div>
+
+    <div id="leave-section">
+      <div class="ot-label">Voľno v tento deň</div>
+      <div class="ot-picker" id="leave-picker"></div>
     </div>
 
     <div class="modal-divider"></div>
@@ -171,7 +184,11 @@ const DEFAULT_R = "#e0a45c";
 const DEFAULT_P = "#5cb8a4";
 const DEFAULT_N = "#8b85e0";
 const DEFAULT_OT = "#e8c547";
-let userColors = { R: DEFAULT_R, P: DEFAULT_P, N: DEFAULT_N, OT: DEFAULT_OT };
+const DEFAULT_D = "#8fd14f";
+const DEFAULT_PP = "#5aa0e0";
+let userColors = { R: DEFAULT_R, P: DEFAULT_P, N: DEFAULT_N, OT: DEFAULT_OT, D: DEFAULT_D, PP: DEFAULT_PP };
+let leaveUser = {};
+let vacationEntitlement = 25;
 let notesData = {};
 let overtimeUser = {};
 
@@ -190,6 +207,7 @@ const STORAGE_KEY = "rozvrh-zmien-notes-v2";
 const OLD_STORAGE_KEY = "rozvrh-zmien-notes-v1";
 const PREFS_KEY = "rozvrh-zmien-prefs-v1";
 const OVERTIME_KEY = "rozvrh-zmien-overtime-v1";
+const LEAVE_KEY = "rozvrh-zmien-leave-v1";
 function loadNotes(){
   try{ localStorage.removeItem(OLD_STORAGE_KEY); }catch(e){}
   try{
@@ -209,6 +227,15 @@ function loadOvertime(){
 function saveOvertime(){
   try{ localStorage.setItem(OVERTIME_KEY, JSON.stringify(overtimeUser)); }catch(e){}
 }
+function loadLeave(){
+  try{
+    const raw = localStorage.getItem(LEAVE_KEY);
+    leaveUser = raw ? JSON.parse(raw) : {};
+  }catch(e){ leaveUser = {}; }
+}
+function saveLeave(){
+  try{ localStorage.setItem(LEAVE_KEY, JSON.stringify(leaveUser)); }catch(e){}
+}
 function overtimeKeyFor(dKey){
   return `${mode}_${shift}_${dKey}`;
 }
@@ -217,23 +244,28 @@ function loadPrefs(){
     const raw = localStorage.getItem(PREFS_KEY);
     if(raw){
       const p = JSON.parse(raw);
-      if(p.userColors) userColors = p.userColors;
+      if(p.userColors) userColors = Object.assign({}, userColors, p.userColors);
+      if(typeof p.vacationEntitlement==='number' && isFinite(p.vacationEntitlement) && p.vacationEntitlement>=0) vacationEntitlement = p.vacationEntitlement;
       if(p.mode) mode = p.mode;
       if(p.shift) shift = p.shift;
     }
   }catch(e){}
 }
 function savePrefs(){
-  try{ localStorage.setItem(PREFS_KEY, JSON.stringify({userColors, mode, shift})); }catch(e){}
+  try{ localStorage.setItem(PREFS_KEY, JSON.stringify({userColors, mode, shift, vacationEntitlement})); }catch(e){}
 }
 
 loadNotes();
 loadOvertime();
+loadLeave();
 loadPrefs();
 document.getElementById("color-R").value = userColors.R;
 document.getElementById("color-P").value = userColors.P;
 document.getElementById("color-N").value = userColors.N;
 document.getElementById("color-OT").value = userColors.OT;
+document.getElementById("color-D").value = userColors.D;
+document.getElementById("color-PP").value = userColors.PP;
+document.getElementById("vac-entitlement").value = vacationEntitlement;
 
 // ---- mode tabs ----
 const modeTabs = document.getElementById("mode-tabs");
@@ -283,6 +315,8 @@ function renderLegend(){
   html += `<span><span class="swatch" style="background:#d9605a"></span>S - sviatok</span>`;
   html += `<span><span class="swatch" style="border:1.5px dashed #c98c3a;background:none"></span>zmena v prípade potreby</span>`;
   html += `<span><span class="swatch" style="background:${userColors.OT}"></span>nadčas</span>`;
+  html += `<span><span class="swatch" style="background:${userColors.D}"></span>D - dovolenka</span>`;
+  html += `<span><span class="swatch" style="background:${userColors.PP}"></span>PP - priepustka</span>`;
   html += `<span><span class="swatch" style="border-radius:50%;background:${userColors.R}"></span>poznámka</span>`;
   legend.innerHTML = html;
 }
@@ -359,11 +393,38 @@ function renderOtSection(dKey, code){
     otPicker.appendChild(b);
   }
 }
+function renderLeaveSection(dKey, code){
+  const section = document.getElementById('leave-section');
+  const picker = document.getElementById('leave-picker');
+  picker.innerHTML = '';
+  if(!(code==="R" || code==="P" || code==="N")){
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+  const key = overtimeKeyFor(dKey);
+  const cur = leaveUser[key];
+  [["D","Dovolenka (D)"],["PP","Priepustka (PP)"]].forEach(([val,label])=>{
+    const b = document.createElement('button');
+    b.className = 'ot-btn';
+    b.textContent = label;
+    const isOn = cur===val;
+    if(isOn){ b.classList.add('on'); b.style.background = userColors[val]; b.style.borderColor = userColors[val]; }
+    b.onclick = ()=>{
+      if(isOn){ delete leaveUser[key]; } else { leaveUser[key] = val; }
+      saveLeave();
+      render();
+      renderLeaveSection(dKey, code);
+    };
+    picker.appendChild(b);
+  });
+}
 function openNoteModal(dateKey, dateLabel, code){
   activeNoteKey = overtimeKeyFor(dateKey);
   document.getElementById('note-date-label').textContent = dateLabel;
   document.getElementById('note-text').value = notesData[activeNoteKey] || '';
   renderOtSection(dateKey, code);
+  renderLeaveSection(dateKey, code);
   document.getElementById('note-overlay').style.display = 'flex';
 }
 function closeNoteModal(){
@@ -387,6 +448,26 @@ document.getElementById('note-delete').onclick = ()=>{
   closeNoteModal();
   render();
 };
+
+function renderLeaveStats(){
+  const prefix = `${mode}_${shift}_${year}-`;
+  let d=0, pp=0;
+  Object.keys(leaveUser).forEach(k=>{
+    if(k.indexOf(prefix)===0){
+      if(leaveUser[k]==="D") d++;
+      else if(leaveUser[k]==="PP") pp++;
+    }
+  });
+  const left = vacationEntitlement - d;
+  const box = document.getElementById("leave-stats");
+  box.innerHTML = "";
+  [["Dovolenka "+year, `${d} / ${vacationEntitlement}`, `zostáva ${left}`],["Priepustky "+year, `${pp}`, ""]].forEach(([label,val,sub])=>{
+    const card=document.createElement("div");
+    card.className="stat-card";
+    card.innerHTML=`<div class="l">${label}</div><div class="v">${val}</div>` + (sub ? `<div class="s">${sub}</div>` : "");
+    box.appendChild(card);
+  });
+}
 
 function render(){
   updateTabs();
@@ -434,15 +515,23 @@ function render(){
     const otKey = overtimeKeyFor(dKey);
     const otEntry = overtimeUser[otKey];
     const userLetter = (otEntry && otEntry.type==='letter') ? otEntry.value : null;
-    const isExtended = !!(otEntry && otEntry.type==='extend' && code);
+    const leave = (code==="R" || code==="P" || code==="N") ? leaveUser[otKey] : null;
+    const isExtended = !!(otEntry && otEntry.type==='extend' && code && leave!=="D");
     if(code){
       cell.classList.add("filled");
-      cell.style.background=colors[code];
+      cell.style.background = (leave==="D") ? userColors.D : colors[code];
       const codeWrap=document.createElement("span");
       codeWrap.className="code";
-      codeWrap.textContent = isExtended ? `12/${code}` : code;
+      codeWrap.textContent = (leave==="D") ? "D" : (isExtended ? `12/${code}` : code);
       cell.appendChild(numWrap);
       cell.appendChild(codeWrap);
+      if(leave==="PP"){
+        const badge=document.createElement("span");
+        badge.className="leave-badge";
+        badge.textContent="PP";
+        badge.style.background=userColors.PP;
+        cell.appendChild(badge);
+      }
       if(isExtended){
         cell.classList.add("extended");
         cell.style.setProperty("--ot-color", userColors.OT);
@@ -484,6 +573,7 @@ function render(){
     };
     cal.appendChild(cell);
   });
+  renderLeaveStats();
   const st=document.getElementById("stats");
   const statsSrc = mode==="12h" ? stats12h : stats8h;
   const [hodiny,zmeny]=statsSrc[shift][mi];
@@ -514,8 +604,20 @@ document.getElementById("color-R").oninput = (e)=>{ userColors.R = e.target.valu
 document.getElementById("color-P").oninput = (e)=>{ userColors.P = e.target.value; savePrefs(); render(); };
 document.getElementById("color-N").oninput = (e)=>{ userColors.N = e.target.value; savePrefs(); render(); };
 document.getElementById("color-OT").oninput = (e)=>{ userColors.OT = e.target.value; savePrefs(); render(); };
+["D","PP"].forEach(k=>{
+  const el = document.getElementById("color-"+k);
+  const h = (e)=>{ userColors[k] = e.target.value; savePrefs(); render(); };
+  el.addEventListener("input", h);
+  el.addEventListener("change", h);
+});
+document.getElementById("vac-entitlement").addEventListener("input", (e)=>{
+  const v = parseInt(e.target.value, 10);
+  if(isFinite(v) && v>=0){ vacationEntitlement = v; savePrefs(); render(); }
+});
 document.getElementById("reset-colors").onclick = ()=>{
-  userColors = { R: DEFAULT_R, P: DEFAULT_P, N: DEFAULT_N, OT: DEFAULT_OT };
+  userColors = { R: DEFAULT_R, P: DEFAULT_P, N: DEFAULT_N, OT: DEFAULT_OT, D: DEFAULT_D, PP: DEFAULT_PP };
+  document.getElementById("color-D").value = DEFAULT_D;
+  document.getElementById("color-PP").value = DEFAULT_PP;
   document.getElementById("color-R").value = DEFAULT_R;
   document.getElementById("color-P").value = DEFAULT_P;
   document.getElementById("color-N").value = DEFAULT_N;
