@@ -132,7 +132,7 @@
   <div class="stats" id="stats"></div>
   <div class="stats" id="leave-stats"></div>
 
-  <div class="offline-note">Táto appka beží celá vo vašom prehliadači — funguje aj bez internetu a poznámky sa ukladajú priamo do tohto zariadenia. (verzia 6)</div>
+  <div class="offline-note">Táto appka beží celá vo vašom prehliadači — funguje aj bez internetu a poznámky sa ukladajú priamo do tohto zariadenia. (verzia 7)</div>
 </div>
 
 <div class="overlay" id="note-overlay">
@@ -450,21 +450,21 @@ document.getElementById('note-delete').onclick = ()=>{
 };
 
 function renderLeaveStats(){
-  const prefix = `${mode}_${shift}_${year}-`;
-  let d=0, pp=0;
+  const yr = `-${year}-`;
+  let d12=0, d8=0, pp=0;
   Object.keys(leaveUser).forEach(k=>{
-    if(k.indexOf(prefix)===0){
-      if(leaveUser[k]==="D") d++;
-      else if(leaveUser[k]==="PP") pp++;
-    }
+    const m = k.match(/^(12h|8h)_[^_]*_(\d{4})-/);
+    if(!m || m[2]!==String(year)) return;
+    if(leaveUser[k]==="D"){ if(m[1]==="12h") d12++; else d8++; }
+    else if(leaveUser[k]==="PP") pp++;
   });
-  const perDay = (mode==="12h") ? 1.5 : 1;
-  const used = d * perDay;
+  const d = d12 + d8;
+  const used = d12*1.5 + d8;
   const left = vacationEntitlement - used;
   const fmt = (n)=> String(Math.round(n*100)/100).replace(".", ",");
   const box = document.getElementById("leave-stats");
   box.innerHTML = "";
-  [["Dovolenka "+year, `${fmt(used)} / ${fmt(vacationEntitlement)}`, `zostáva ${fmt(left)}` + (mode==="12h" ? ` · ${d} ${d===1?"deň":(d>=2&&d<=4?"dni":"dní")} po 1,5` : "")],["Priepustky "+year, `${pp}`, ""]].forEach(([label,val,sub])=>{
+  [["Dovolenka "+year, `${fmt(used)} / ${fmt(vacationEntitlement)}`, `zostáva ${fmt(left)}` + (d12>0 ? ` · ${d12} ${d12===1?"deň":(d12>=2&&d12<=4?"dni":"dní")} po 1,5` : "")],["Priepustky "+year, `${pp}`, ""]].forEach(([label,val,sub])=>{
     const card=document.createElement("div");
     card.className="stat-card";
     card.innerHTML=`<div class="l">${label}</div><div class="v">${val}</div>` + (sub ? `<div class="s">${sub}</div>` : "");
