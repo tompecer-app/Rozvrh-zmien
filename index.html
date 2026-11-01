@@ -132,7 +132,7 @@
   <div class="stats" id="stats"></div>
   <div class="stats" id="leave-stats"></div>
 
-  <div class="offline-note">Táto appka beží celá vo vašom prehliadači — funguje aj bez internetu a poznámky sa ukladajú priamo do tohto zariadenia. (verzia 7)</div>
+  <div class="offline-note">Táto appka beží celá vo vašom prehliadači — funguje aj bez internetu a poznámky sa ukladajú priamo do tohto zariadenia. (verzia 8)</div>
 </div>
 
 <div class="overlay" id="note-overlay">
@@ -214,7 +214,23 @@ function loadNotes(){
     const raw = localStorage.getItem(STORAGE_KEY);
     notesData = raw ? JSON.parse(raw) : {};
   }catch(e){ notesData = {}; }
+  // migrate per-shift notes (mode_shift_date) to shared per-mode notes (mode_date)
+  try{
+    const old = Object.keys(notesData).filter(k=>k.split("_").length===3);
+    if(old.length){
+      try{ localStorage.setItem(STORAGE_KEY+"-backup", JSON.stringify(notesData)); }catch(e){}
+      old.sort().forEach(k=>{
+        const parts=k.split("_"); const nk=parts[0]+"_"+parts[2]; const t=notesData[k];
+        delete notesData[k];
+        if(!t) return;
+        if(!notesData[nk]) notesData[nk]=t;
+        else if(notesData[nk].indexOf(t)===-1) notesData[nk]=notesData[nk]+"\n"+t;
+      });
+      saveNotes();
+    }
+  }catch(e){}
 }
+function noteKeyFor(dKey){ return `${mode}_${dKey}`; }
 function saveNotes(){
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(notesData)); }catch(e){}
 }
@@ -420,7 +436,7 @@ function renderLeaveSection(dKey, code){
   });
 }
 function openNoteModal(dateKey, dateLabel, code){
-  activeNoteKey = overtimeKeyFor(dateKey);
+  activeNoteKey = noteKeyFor(dateKey);
   document.getElementById('note-date-label').textContent = dateLabel;
   document.getElementById('note-text').value = notesData[activeNoteKey] || '';
   renderOtSection(dateKey, code);
@@ -506,7 +522,7 @@ function render(){
     const isToday = isCurrentMonth && dayNum===todayD;
     const otLetter = otMap[dayNum];
     const dKey = dateKeyFor(year, mi, dayNum);
-    const hasNote = !!notesData[overtimeKeyFor(dKey)];
+    const hasNote = !!notesData[noteKeyFor(dKey)];
     const cell=document.createElement("div");
     cell.className = "day-cell";
     if(isToday) cell.classList.add("today");
@@ -568,7 +584,7 @@ function render(){
       dot.className="note-dot";
       if(code || userLetter){ dot.style.background="#fff"; dot.style.boxShadow="0 0 0 1px rgba(0,0,0,0.25)"; }
       cell.appendChild(dot);
-      cell.title = notesData[overtimeKeyFor(dKey)];
+      cell.title = notesData[noteKeyFor(dKey)];
     }
     cell.onclick = ()=>{
       const dateLabel = `${dayNum}. ${months[mi]} ${year}`;
